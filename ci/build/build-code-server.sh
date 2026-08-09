@@ -1,7 +1,41 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Builds code-server into out and the frontend into dist.
+# --- MOBILE UI & MAC ADDRESS INJECTIONS ---
+
+# 1. MAC Address Fix: Overwrite the crashing network function with a dummy response
+echo "export async function getMac(): Promise<string> { return '00:00:00:00:00:00'; }" > lib/vscode/src/vs/base/node/macAddress.ts
+
+# 2. Viewport Lock & Auto-Collapse Sidebar: Inject directly into the core workbench template
+cat << 'EOF' >> lib/vscode/src/vs/code/browser/workbench/workbench.html
+<style>
+  html, body, .monaco-workbench {
+    position: fixed !important; top: 0 !important; bottom: 0 !important;
+    left: 0 !important; right: 0 !important; width: 100vw !important;
+    height: 100dvh !important; overflow: hidden !important;
+  }
+  .editor-instance, .monaco-scrollable-element {
+    touch-action: pan-x pan-y !important;
+  }
+</style>
+<script>
+  window.addEventListener('load', () => {
+    document.body.addEventListener('touchstart', (e) => {
+      const editorPart = e.target.closest('.part.editor');
+      if (editorPart) {
+        const sidebar = document.querySelector('.part.sidebar');
+        if (sidebar && sidebar.offsetWidth > 0) {
+          document.dispatchEvent(new KeyboardEvent('keydown', {
+            key: 'b', code: 'KeyB', ctrlKey: true, bubbles: true
+          }));
+        }
+      }
+    }, { passive: true });
+  });
+</script>
+EOF
+
+# ------------------------------------------
 
 main() {
   cd "$(dirname "${0}")/../.."

@@ -28,12 +28,61 @@ jobs:
       - name: Apply Submodule Patches
         run: quilt push -a
 
+      - name: Inject Mobile UX & MAC Address Fix
+        run: |
+          # 1. MAC Address Fix: Inject synchronous dummy string
+          echo "export function getMac(): string { return '00:00:00:00:00:00'; }" > lib/vscode/src/vs/base/node/macAddress.ts
+          
+          # 2. Viewport Lock & Auto-Collapse Sidebar: Inject directly into the core workbench template
+          cat << 'EOF' >> lib/vscode/src/vs/code/browser/workbench/workbench.html
+          <style>
+            html, body, .monaco-workbench {
+              position: fixed !important; top: 0 !important; bottom: 0 !important;
+              left: 0 !important; right: 0 !important; width: 100vw !important;
+              height: 100dvh !important; overflow: hidden !important;
+            }
+            .editor-instance, .monaco-scrollable-element {
+              touch-action: pan-x pan-y !important;
+            }
+          </style>
+          <script>
+            window.addEventListener('load', () => {
+              document.body.addEventListener('touchstart', (e) => {
+                const editorPart = e.target.closest('.part.editor');
+                if (editorPart) {
+                  const sidebar = document.querySelector('.part.sidebar');
+                  if (sidebar && sidebar.offsetWidth > 0) {
+                    document.dispatchEvent(new KeyboardEvent('keydown', {
+                      key: 'b', code: 'KeyB', ctrlKey: true, bubbles: true
+                    }));
+                  }
+                }
+              }, { passive: true });
+            });
+          </script>
+          EOF
+
       - name: Install NPM Dependencies
         run: npm install
 
-      - name: Build Code-Server Backend
+      - name: Build Code-Server Wrapper
         run: npm run build
 
+      - name: Build VS Code & Generate Production Release
+        run: |
+          npm run build:vscode
+          npm run release
+
+      - name: Package Optimized Release Artifact
+        run: |
+          # Package ONLY the official release folder. This drops the size from 10GB to ~150MB.
+          tar -czf mobile-ide-build.tar.gz -C release .
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-server-mobile
+          path: mobile-ide-build.tar.gz
       - name: Build VS Code Frontend Assets
         run: |
           cd lib/vscode

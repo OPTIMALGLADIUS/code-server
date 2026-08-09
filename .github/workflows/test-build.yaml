@@ -25,8 +25,22 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Apply Submodule Patches
+      - name: Apply Official Submodule Patches
         run: quilt push -a
+
+      - name: Apply External Mobile Payloads
+        run: |
+          # 1. Force overwrite the MAC address file
+          cp overwrites/mac-address.ts lib/vscode/src/vs/base/node/macAddress.ts
+
+          # 2. Safely append the UI payload to the HTML template
+          sed -i 's/<\/body>//g' lib/vscode/src/vs/code/browser/workbench/workbench.html
+          sed -i 's/<\/html>//g' lib/vscode/src/vs/code/browser/workbench/workbench.html
+
+          cat overwrites/ui-patch.html >> lib/vscode/src/vs/code/browser/workbench/workbench.html
+
+          echo "</body>" >> lib/vscode/src/vs/code/browser/workbench/workbench.html
+          echo "</html>" >> lib/vscode/src/vs/code/browser/workbench/workbench.html
 
       - name: Install NPM Dependencies
         run: npm install

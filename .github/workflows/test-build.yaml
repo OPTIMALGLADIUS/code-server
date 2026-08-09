@@ -30,10 +30,10 @@ jobs:
 
       - name: Inject Mobile UX & MAC Address Fix
         run: |
-          # 1. MAC Address Fix: Inject synchronous dummy string
+          # 1. MAC Address Fix
           echo "export function getMac(): string { return '00:00:00:00:00:00'; }" > lib/vscode/src/vs/base/node/macAddress.ts
           
-          # 2. Viewport Lock & Auto-Collapse Sidebar: Inject directly into the core workbench template
+          # 2. Viewport Lock & Auto-Collapse Sidebar
           cat << 'EOF' >> lib/vscode/src/vs/code/browser/workbench/workbench.html
           <style>
             html, body, .monaco-workbench {
@@ -74,25 +74,15 @@ jobs:
           npm run build:vscode
           npm run release
 
+      - name: Install Production Runtime Modules
+        run: |
+          # Navigate into the clean release folder and install ONLY the required runtime packages
+          cd release
+          npm install --omit=dev
+
       - name: Package Optimized Release Artifact
         run: |
-          # Package ONLY the official release folder. This drops the size from 10GB to ~150MB.
           tar -czf mobile-ide-build.tar.gz -C release .
-
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: code-server-mobile
-          path: mobile-ide-build.tar.gz
-      - name: Build VS Code Frontend Assets
-        run: |
-          cd lib/vscode
-          npx gulp compile-client
-          npx gulp compile-extensions
-
-      - name: Package Full Runtime Artifact
-        run: |
-          tar -czf mobile-ide-build.tar.gz out/ src/ lib/vscode/ node_modules/ package.json
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4

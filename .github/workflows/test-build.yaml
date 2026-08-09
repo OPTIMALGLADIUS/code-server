@@ -7,7 +7,8 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Use native ARM64 runner to match Android phone architecture
+    runs-on: ubuntu-24.04-arm
 
     steps:
       - name: Checkout Code
@@ -40,8 +41,20 @@ jobs:
           npx gulp compile-client
           npx gulp compile-extensions
 
-      - name: Package Artifacts
-        run: tar -czf mobile-ide-build.tar.gz out/ lib/vscode/out/ node_modules/ package.json
+      - name: Generate Product Metadata
+        run: |
+          cp lib/vscode/product.json lib/vscode/out/product.json 2>/dev/null || true
+          cp product.json lib/vscode/product.json 2>/dev/null || true
+
+      - name: Package Full Runtime Artifact
+        run: |
+          tar -czf mobile-ide-build.tar.gz \
+            out/ \
+            src/ \
+            lib/vscode/ \
+            node_modules/ \
+            package.json \
+            product.json
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4

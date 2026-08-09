@@ -1,0 +1,50 @@
+name: Build Mobile Code-Server
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config python3 libx11-dev libxkbfile-dev libsecret-1-dev quilt libkrb5-dev
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Apply Submodule Patches
+        run: quilt push -a
+
+      - name: Install NPM Dependencies
+        run: npm install
+
+      - name: Build Code-Server Backend
+        run: npm run build
+
+      - name: Build VS Code Frontend Assets
+        run: |
+          cd lib/vscode
+          npx gulp compile-client
+          npx gulp compile-extensions
+
+      - name: Package Artifacts
+        run: tar -czf mobile-ide-build.tar.gz out/ lib/vscode/out/ node_modules/ package.json
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-server-mobile
+          path: mobile-ide-build.tar.gz

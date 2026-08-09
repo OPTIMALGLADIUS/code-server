@@ -1,0 +1,49 @@
+Index: code-server/lib/vscode/src/vs/code/browser/workbench/workbench.html
+===================================================================
+--- code-server.orig/lib/vscode/src/vs/code/browser/workbench/workbench.html
++++ code-server/lib/vscode/src/vs/code/browser/workbench/workbench.html
+@@ -25,5 +25,43 @@
+ 	<!-- Workbench -->
+ 	<div id="monaco-workbench"></div>
+ 
++	<!-- Mobile UI Viewport Lock & Auto-Collapse Sidebar -->
++	<style>
++		html, body, .monaco-workbench {
++			position: fixed !important; top: 0 !important; bottom: 0 !important;
++			left: 0 !important; right: 0 !important; width: 100vw !important;
++			height: 100dvh !important; overflow: hidden !important;
++		}
++		.editor-instance, .monaco-scrollable-element {
++			touch-action: pan-x pan-y !important;
++		}
++	</style>
++	<script>
++		window.addEventListener('DOMContentLoaded', () => {
++			function collapseSidebar() {
++				const sidebar = document.querySelector('.part.sidebar');
++				if (sidebar && sidebar.offsetWidth > 10 && !sidebar.classList.contains('hidden')) {
++					// 1. Try clicking the currently active Activity Bar tab (toggles sidebar shut)
++					const activeTab = document.querySelector('.activitybar .action-item.checked, .activitybar [aria-checked="true"], .activitybar [aria-selected="true"]');
++					if (activeTab) { activeTab.click(); return; }
++					// 2. Fallback: Click the layout sidebar toggle button
++					const toggleBtn = document.querySelector('[aria-label*="Toggle Primary Side Bar"], [aria-label*="Toggle Side Bar"], .action-label.codicon-layout-sidebar-left, .action-label.codicon-sidebar-left');
++					if (toggleBtn) { toggleBtn.click(); return; }
++				}
++			}
+
++			document.body.addEventListener('touchstart', (e) => {
++				// Case A: Tapping directly in the Editor / Extension Detail area
++				if (e.target.closest('.part.editor')) {
++					collapseSidebar();
++				} 
++				// Case B: Tapping an Extension item, File row, or Search result in Sidebar
++				else if (e.target.closest('.part.sidebar .monaco-list-row, .part.sidebar .action-item')) {
++					// Do not collapse if tapping a folder twistie (expand/collapse arrow)
++					if (!e.target.closest('.monaco-tl-twistie, .collapsible')) {
++						setTimeout(collapseSidebar, 300);
++					}
++				}
++			}, { passive: true });
++		});
++	</script>
+ </html>

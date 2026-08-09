@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    # Use native ARM64 runner to match Android phone architecture
+    # Uses native ARM64 to match your phone's processor architecture
     runs-on: ubuntu-24.04-arm
 
     steps:
@@ -19,7 +19,7 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential pkg-config python3 libx11-dev libxkbfile-dev libsecret-1-dev quilt libkrb5-dev
+          sudo apt-get install -y build-essential pkg-config python3 libx11-dev libxkbfile-dev libsecret-1-dev quilt libkrb5-dev jq
 
       - name: Setup Node.js 24
         uses: actions/setup-node@v4
@@ -32,8 +32,26 @@ jobs:
       - name: Install NPM Dependencies
         run: npm install
 
-      - name: Build Code-Server Backend
+      - name: Build Code-Server Wrapper
         run: npm run build
+
+      - name: Build VS Code Core
+        # The VERSION variable is strictly required by the internal build scripts
+        run: VERSION=1.0.0 npm run build:vscode
+
+      - name: Assemble Release Bundle
+        # KEEP_MODULES ensures the Node.js environment is bundled safely inside
+        run: KEEP_MODULES=1 npm run release
+
+      - name: Package Artifact
+        # This zips the contents of the newly generated 'release' directory
+        run: tar -czf mobile-ide-build.tar.gz -C release .
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-server-mobile
+          path: mobile-ide-build.tar.gz
 
       - name: Build VS Code Frontend Assets
         run: |

@@ -3,8 +3,8 @@ set -euo pipefail
 
 # --- MOBILE UI & MAC ADDRESS INJECTIONS ---
 
-# 1. MAC Address Fix: Overwrite the crashing network function with a dummy response
-echo "export async function getMac(): Promise<string> { return '00:00:00:00:00:00'; }" > lib/vscode/src/vs/base/node/macAddress.ts
+# 1. MAC Address Fix: Overwrite the crashing network function with a synchronous dummy string
+echo "export function getMac(): string { return '00:00:00:00:00:00'; }" > lib/vscode/src/vs/base/node/macAddress.ts
 
 # 2. Viewport Lock & Auto-Collapse Sidebar: Inject directly into the core workbench template
 cat << 'EOF' >> lib/vscode/src/vs/code/browser/workbench/workbench.html

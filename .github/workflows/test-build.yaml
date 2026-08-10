@@ -32,7 +32,7 @@ jobs:
         run: |
           # 1. Force overwrite the MAC address file
           cp overwrites/mac-address.ts lib/vscode/src/vs/base/node/macAddress.ts
-          
+
           # 2. Safely strip closing tags from the HTML template
           sed -i 's/<\/body>//g' lib/vscode/src/vs/code/browser/workbench/workbench.html
           sed -i 's/<\/html>//g' lib/vscode/src/vs/code/browser/workbench/workbench.html
@@ -68,10 +68,10 @@ jobs:
           touch release/lib/vscode/node_modules/vsda/rust/web/vsda_bg.wasm
           touch release/lib/vscode/node_modules/vsda/rust/web/vsda.js
 
-          # Provide a robust dummy module so VS Code doesn't crash during WebSocket auth
+          # Provide a robust dummy module that explicitly skips signing to prevent Open VSX network rejection
           cat << 'EOF' > release/lib/vscode/node_modules/vsda/index.js
           class validator { createNewMessage() { return "dummy"; } validate() { return "ok"; } close() {} }
-          class signer { sign() { return "dummy"; } close() {} }
+          class signer { sign() { throw new Error("Skip signature"); } close() {} }
           module.exports = { validator, signer };
           EOF
 

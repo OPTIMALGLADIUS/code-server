@@ -1,36 +1,50 @@
 <!-- Mobile UX: Extension Tab Layout Overrides -->
 <style>
-  /* 1. Break the flexbox container to allow the header to scroll naturally */
+  /* 1. Restore the native Flexbox layout for smooth, 1-step scrolling */
   .extension-editor {
-    display: block !important;
-    overflow-y: auto !important; 
-    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important; 
   }
 
-  /* 2. Allow the header text to wrap so it doesn't get trimmed */
+  /* 2. Make the header Ultra-Compact so it doesn't steal screen real estate */
   .extension-editor > .header {
-    display: flex !important;
+    flex-shrink: 0 !important;
     min-width: 0 !important;
     max-width: 100% !important;
     height: auto !important; 
-    padding: 15px 15px 0 15px !important;
+    min-height: min-content !important;
+    padding: 10px 15px 0 15px !important; /* Tighter padding */
     box-sizing: border-box !important;
     flex-wrap: wrap !important; 
   }
+  
+  /* Hide the massive icon */
+  .extension-editor > .header .icon-container {
+    display: none !important;
+  }
+  
+  /* Shrink the title and force text wrapping */
   .extension-editor > .header .details {
     min-width: 0 !important;
+    width: 100% !important;
     overflow-wrap: break-word !important; 
     white-space: normal !important;
   }
+  .extension-editor > .header .details .title {
+    font-size: 18px !important; /* Smaller font */
+    margin-bottom: 5px !important;
+  }
+  
+  /* Hide the redundant description text in the header to save vertical space */
+  .extension-editor > .header .details .description {
+    display: none !important; 
+  }
 
-  /* 3. The Viewport Trick: Force the body to be exactly the height of the screen.
-        This gives the iframe strict boundaries to render within, while allowing 
-        the header to safely scroll completely out of view above it. */
+  /* 3. Restore the body boundary so the Documentation iframe scrolls natively and smoothly */
   .extension-editor > .body {
-    display: block !important;
-    height: 100% !important; 
-    min-height: 75dvh !important; /* Failsafe height for the Webview iframe */
-    position: relative !important;
-    overflow: hidden !important; 
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow: hidden !important; /* Lets the internal webview handle the scroll natively */
   }
 </style>

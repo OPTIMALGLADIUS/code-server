@@ -1,50 +1,133 @@
 <!-- Mobile UX: Extension Tab Layout Overrides -->
 <style>
-  /* 1. Restore the native Flexbox layout for smooth, 1-step scrolling */
+  /* 1. Restore the native Flexbox layout for the Extension Editor */
   .extension-editor {
     display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important; 
   }
 
-  /* 2. Make the header Ultra-Compact so it doesn't steal screen real estate */
+  /* 2. Header Layout: Align Icon and Text side-by-side */
   .extension-editor > .header {
+    display: flex !important;
+    flex-direction: row !important;
     flex-shrink: 0 !important;
     min-width: 0 !important;
     max-width: 100% !important;
     height: auto !important; 
     min-height: min-content !important;
-    padding: 10px 15px 0 15px !important; /* Tighter padding */
+    padding: 12px 15px 10px 15px !important; 
     box-sizing: border-box !important;
-    flex-wrap: wrap !important; 
+    flex-wrap: nowrap !important; 
   }
   
-  /* Hide the massive icon */
+  /* 3. Restore the Icon (Shrunk to 50x50 pixels) */
   .extension-editor > .header .icon-container {
-    display: none !important;
+    display: block !important;
+    width: 50px !important;
+    height: 50px !important;
+    margin-right: 12px !important;
+    flex-shrink: 0 !important;
+  }
+  .extension-editor > .header .icon-container .icon {
+    width: 50px !important;
+    height: 50px !important;
+    border-radius: 6px !important;
   }
   
-  /* Shrink the title and force text wrapping */
+  /* 4. Details Container & Title Formatting */
   .extension-editor > .header .details {
     min-width: 0 !important;
     width: 100% !important;
+    flex: 1 !important;
     overflow-wrap: break-word !important; 
     white-space: normal !important;
   }
   .extension-editor > .header .details .title {
-    font-size: 18px !important; /* Smaller font */
-    margin-bottom: 5px !important;
+    font-size: 16px !important; 
+    margin-bottom: 2px !important;
   }
   
-  /* Hide the redundant description text in the header to save vertical space */
+  /* 5. Description Base Styles and Clamping Classes */
   .extension-editor > .header .details .description {
-    display: none !important; 
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    margin-top: 4px !important;
+    opacity: 0.85 !important;
+  }
+  .desc-clamped {
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    overflow: hidden !important;
+  }
+  .desc-expanded {
+    display: block !important;
+    overflow: visible !important;
   }
 
-  /* 3. Restore the body boundary so the Documentation iframe scrolls natively and smoothly */
+  /* 6. Restore the documentation iframe boundaries */
   .extension-editor > .body {
     flex: 1 1 auto !important;
     min-height: 0 !important;
-    overflow: hidden !important; /* Lets the internal webview handle the scroll natively */
+    overflow: hidden !important; 
   }
 </style>
+
+<script>
+  window.addEventListener('load', () => {
+    // Watch for dynamically rendered extension pages
+    const observer = new MutationObserver((mutations) => {
+      const descriptions = document.querySelectorAll('.extension-editor > .header .details .description:not(.rm-processed)');
+      
+      descriptions.forEach(desc => {
+        desc.classList.add('rm-processed');
+        desc.classList.add('desc-clamped'); // Apply 2-line clamp by default
+        
+        // Wait 150ms for DOM layout to paint so we can measure text height accurately
+        setTimeout(() => {
+          // Temporarily unclamp to measure the full text height
+          desc.classList.remove('desc-clamped');
+          desc.classList.add('desc-expanded');
+          const fullHeight = desc.scrollHeight;
+          
+          // Reapply clamp and measure the restricted height
+          desc.classList.remove('desc-expanded');
+          desc.classList.add('desc-clamped');
+          const clampedHeight = desc.clientHeight;
+          
+          // If the text naturally exceeds the 2-line height, inject the toggle button
+          if (fullHeight > clampedHeight) {
+            const toggleBtn = document.createElement('div');
+            toggleBtn.innerText = 'Read more ▼';
+            toggleBtn.style.color = 'var(--vscode-textLink-foreground)';
+            toggleBtn.style.fontSize = '11px';
+            toggleBtn.style.fontWeight = '600';
+            toggleBtn.style.cursor = 'pointer';
+            toggleBtn.style.marginTop = '4px';
+            toggleBtn.style.display = 'inline-block';
+            
+            toggleBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              if (desc.classList.contains('desc-clamped')) {
+                desc.classList.remove('desc-clamped');
+                desc.classList.add('desc-expanded');
+                toggleBtn.innerText = 'Read less ▲';
+              } else {
+                desc.classList.remove('desc-expanded');
+                desc.classList.add('desc-clamped');
+                toggleBtn.innerText = 'Read more ▼';
+              }
+            });
+            
+            // Insert the toggle button directly below the description
+            desc.parentNode.insertBefore(toggleBtn, desc.nextSibling);
+          }
+        }, 150);
+      });
+    });
+    
+    // Start observing the DOM for injected extension views
+    observer.observe(document.body, { childList: true, subtree: true });
+  });
+</script>

@@ -1,0 +1,86 @@
+name: Build Mobile Code-Server
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config python3 libx11-dev libxkbfile-dev libsecret-1-dev quilt libkrb5-dev rsync jq
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Apply Official Submodule Patches
+        run: quilt push -a
+
+      - name: Apply External Mobile Payloads
+        run: |
+          # 1. Force overwrite the MAC address file
+          cp mobile-payloads/mac-address.ts lib/vscode/src/vs/base/node/macAddress.ts
+          
+          # 2. Safely strip closing tags from the HTML template
+          sed -i 's/<\/body>//g' lib/vscode/src/vs/code/browser/workbench/workbench.html
+          sed -i 's/<\/html>//g' lib/vscode/src/vs/code/browser/workbench/workbench.html
+
+          # 3. Append isolated modular payloads
+          cat overwrites/collapsing.html >> lib/vscode/src/vs/code/browser/workbench/workbench.html
+          cat overwrites/extension-layout.html >> lib/vscode/src/vs/code/browser/workbench/workbench.html
+
+          # 4. Restore closing tags
+          echo "</body>" >> lib/vscode/src/vs/code/browser/workbench/workbench.html
+          echo "</html>" >> lib/vscode/src/vs/code/browser/workbench/workbench.html
+
+      - name: Install NPM Dependencies
+        run: npm install
+
+      - name: Build Code-Server Wrapper
+        run: npm run build
+
+      - name: Build VS Code & Generate Production Release
+        run: |
+          export VERSION="1.0.0-mobile"
+          npm run build:vscode
+          npm run release
+
+      - name: Install Production Runtime Modules
+        run: |
+          cd release
+          FORCE_NODE_VERSION=24 npm install --omit=dev
+
+      - name: Silence VSDA Telemetry Warnings
+        run: |
+          mkdir -p release/lib/vscode/node_modules/vsda/rust/web
+          touch release/lib/vscode/node_modules/vsda/rust/web/vsda_bg.wasm
+          touch release/lib/vscode/node_modules/vsda/rust/web/vsda.js
+
+          # Provide a robust dummy module so VS Code doesn't crash during WebSocket auth
+          cat << 'EOF' > release/lib/vscode/node_modules/vsda/index.js
+          class validator { createNewMessage() { return "dummy"; } validate() { return "ok"; } close() {} }
+          class signer { sign() { return "dummy"; } close() {} }
+          module.exports = { validator, signer };
+          EOF
+
+      - name: Package Optimized Release Artifact
+        run: |
+          tar -czf mobile-ide-build.tar.gz -C release .
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-server-mobile
+          path: mobile-ide-build.tar.gz

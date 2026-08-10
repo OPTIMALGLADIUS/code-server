@@ -31,7 +31,7 @@ jobs:
       - name: Apply External Mobile Payloads
         run: |
           # 1. Force overwrite the MAC address file
-          cp mobile-payloads/mac-address.ts lib/vscode/src/vs/base/node/macAddress.ts
+          cp overwrites/mac-address.ts lib/vscode/src/vs/base/node/macAddress.ts
           
           # 2. Safely strip closing tags from the HTML template
           sed -i 's/<\/body>//g' lib/vscode/src/vs/code/browser/workbench/workbench.html

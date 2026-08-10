@@ -1,23 +1,35 @@
 <!-- Mobile UX: Extension Tab Layout Overrides -->
 <style>
+  /* 1. Ensure the parent maintains its Flexbox layout so the Webview iframe doesn't collapse to 0px */
   .extension-editor {
-    overflow-y: auto !important; 
-    display: block !important; 
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important; 
   }
+
+  /* 2. Fix the trimming/cut-off issue by allowing the header to wrap dynamically */
   .extension-editor > .header {
+    flex-shrink: 0 !important;
     min-width: 0 !important;
     max-width: 100% !important;
     height: auto !important; 
+    min-height: min-content !important;
     padding: 15px 15px 0 15px !important;
     box-sizing: border-box !important;
     flex-wrap: wrap !important; 
   }
+
+  /* 3. Force the text inside the header to break instead of pushing off-screen */
   .extension-editor > .header .details {
     min-width: 0 !important;
     overflow-wrap: break-word !important; 
+    white-space: normal !important;
   }
+
+  /* 4. Restore the body boundary so the Documentation iframe can render and scroll internally */
   .extension-editor > .body {
-    overflow-y: visible !important; 
-    height: auto !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow: hidden !important; 
   }
 </style>

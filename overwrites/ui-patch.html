@@ -8,10 +8,8 @@
     const collapse = () => {
       const sidebar = document.querySelector('.part.sidebar');
       if (sidebar && sidebar.offsetWidth > 10) {
-        // Find the currently active tab in the activity bar
         const activeTab = document.querySelector('.part.activitybar .action-item.checked');
         if (activeTab) {
-          // Dispatch a full suite of mouse events to bypass VS Code's internal event filtering
           activeTab.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
           activeTab.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
           activeTab.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
@@ -19,15 +17,27 @@
       }
     };
 
-    // Use 'pointerdown' in the capture phase to intercept mobile touches before Monaco Editor swallows them
+    let startY = 0;
+    let startX = 0;
+
+    // Record the exact coordinates when the finger touches the screen
     window.addEventListener('pointerdown', (e) => {
-      // If tapping inside the code editor area
+      startY = e.clientY;
+      startX = e.clientX;
+    }, { capture: true, passive: true });
+
+    // When the finger lifts, calculate the distance traveled
+    window.addEventListener('pointerup', (e) => {
+      const diffY = Math.abs(e.clientY - startY);
+      const diffX = Math.abs(e.clientX - startX);
+      
+      // If the finger moved more than 10 pixels, it was a scroll. Ignore the tap.
+      if (diffY > 10 || diffX > 10) return;
+
       if (e.target.closest('.part.editor')) {
         collapse();
       } 
-      // If tapping a file, extension, or search result row in the sidebar
       else if (e.target.closest('.part.sidebar .monaco-list-row')) {
-        // Do not collapse if touching an expand/collapse arrow (twistie)
         if (!e.target.closest('.monaco-tl-twistie, .collapsible')) {
           setTimeout(collapse, 350);
         }

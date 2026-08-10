@@ -64,6 +64,8 @@ jobs:
           mkdir -p release/lib/vscode/node_modules/vsda/rust/web
           touch release/lib/vscode/node_modules/vsda/rust/web/vsda_bg.wasm
           touch release/lib/vscode/node_modules/vsda/rust/web/vsda.js
+          # Provide a dummy CommonJS module so Node.js require('vsda') succeeds without crashing
+          echo 'module.exports = {};' > release/lib/vscode/node_modules/vsda/index.js
 
       - name: Package Optimized Release Artifact
         run: |

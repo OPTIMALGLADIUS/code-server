@@ -59,6 +59,12 @@ jobs:
           cd release
           FORCE_NODE_VERSION=24 npm install --omit=dev
 
+      - name: Silence VSDA Telemetry Warnings
+        run: |
+          mkdir -p release/lib/vscode/node_modules/vsda/rust/web
+          touch release/lib/vscode/node_modules/vsda/rust/web/vsda_bg.wasm
+          touch release/lib/vscode/node_modules/vsda/rust/web/vsda.js
+
       - name: Package Optimized Release Artifact
         run: |
           tar -czf mobile-ide-build.tar.gz -C release .

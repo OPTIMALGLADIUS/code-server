@@ -1,35 +1,36 @@
 <!-- Mobile UX: Extension Tab Layout Overrides -->
 <style>
-  /* 1. Ensure the parent maintains its Flexbox layout so the Webview iframe doesn't collapse to 0px */
+  /* 1. Break the flexbox container to allow the header to scroll naturally */
   .extension-editor {
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important; 
+    display: block !important;
+    overflow-y: auto !important; 
+    height: 100% !important;
   }
 
-  /* 2. Fix the trimming/cut-off issue by allowing the header to wrap dynamically */
+  /* 2. Allow the header text to wrap so it doesn't get trimmed */
   .extension-editor > .header {
-    flex-shrink: 0 !important;
+    display: flex !important;
     min-width: 0 !important;
     max-width: 100% !important;
     height: auto !important; 
-    min-height: min-content !important;
     padding: 15px 15px 0 15px !important;
     box-sizing: border-box !important;
     flex-wrap: wrap !important; 
   }
-
-  /* 3. Force the text inside the header to break instead of pushing off-screen */
   .extension-editor > .header .details {
     min-width: 0 !important;
     overflow-wrap: break-word !important; 
     white-space: normal !important;
   }
 
-  /* 4. Restore the body boundary so the Documentation iframe can render and scroll internally */
+  /* 3. The Viewport Trick: Force the body to be exactly the height of the screen.
+        This gives the iframe strict boundaries to render within, while allowing 
+        the header to safely scroll completely out of view above it. */
   .extension-editor > .body {
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
+    display: block !important;
+    height: 100% !important; 
+    min-height: 75dvh !important; /* Failsafe height for the Webview iframe */
+    position: relative !important;
     overflow: hidden !important; 
   }
 </style>

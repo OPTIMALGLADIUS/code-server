@@ -49,12 +49,21 @@
   /* 5. Fix Title Cut-off & Word Wrap */
   .extension-editor > .header .details .title {
     order: 1 !important; 
+    display: flex !important;
+    flex-wrap: wrap !important;
+    height: auto !important;
+    margin-bottom: 4px !important; 
+  }
+  /* Aggressively target the inner span to bypass VS Code's native text clipping */
+  .extension-editor > .header .details .title .name {
     white-space: normal !important; 
     overflow-wrap: break-word !important; 
     word-wrap: break-word !important; 
     font-size: 16px !important; 
-    margin-bottom: 4px !important; 
     line-height: 1.2 !important;
+    max-width: 100% !important;
+    display: block !important;
+    text-overflow: clip !important;
   }
 
   /* 6. Description (1-Line Clamp) */

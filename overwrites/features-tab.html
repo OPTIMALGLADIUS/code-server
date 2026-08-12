@@ -1,4 +1,4 @@
-<!-- Mobile UX: Features Tab 2-Row Layout & Native Scroll Engine Override -->
+<!-- Mobile UX: Features Tab 2-Row Layout & Virtual Touch-to-Wheel Engine -->
 <style>
   /* 1. Force the SplitView to become a CSS Flex Column */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container {
@@ -9,33 +9,49 @@
     width: 100vw !important; max-width: 100vw !important; height: auto !important; transform: none !important; 
   }
   
-  /* 2. Top Row (Navigation): Full width text wrap, no truncation */
+  /* =========================================
+     TOP ROW (Navigation): The Sledgehammer Fix 
+     ========================================= */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child {
     flex: 0 0 auto !important; height: 180px !important; border-bottom: 1px solid var(--vscode-panel-border) !important;
-    overflow-y: auto !important; overflow-x: hidden !important;
+    overflow: hidden !important; /* JS will handle the scrolling now */
+  }
+  
+  /* Force EVERY nested list element to bypass the 150px dummy column limit */
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-list,
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-scrollable-element,
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-list-rows,
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-list-row {
+    width: 100vw !important; 
+    min-width: 100vw !important; /* Crucial: Overrides VS Code's inline styling */
+    max-width: 100vw !important;
   }
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-list-row {
-    width: 100% !important; max-width: 100vw !important; white-space: normal !important; word-wrap: break-word !important; 
+    white-space: normal !important; word-break: break-word !important; 
+    padding-right: 20px !important; /* Ensure text doesn't touch the very edge */
   }
 
-  /* 3. Bottom Row (Content): Infinite horizontal expansion for swipe scrolling */
+  /* =========================================
+     BOTTOM ROW (Content): Virtualized Tables
+     ========================================= */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child {
-    flex: 1 1 auto !important; height: calc(100dvh - 250px) !important; overflow: auto !important; 
+    flex: 1 1 auto !important; height: calc(100dvh - 250px) !important; overflow: hidden !important; 
   }
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-scrollable-element {
-    overflow: auto !important; width: 100% !important; height: 100% !important;
+    overflow: hidden !important; width: 100vw !important; height: 100% !important;
   }
+  
+  /* Allow internal tables/commands to stretch infinitely to the right for horizontal scrolling */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-table,
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-rows {
-    width: max-content !important; min-width: 100% !important; 
+    width: max-content !important; min-width: 100vw !important; 
   }
-  /* Prevent word wrap in the bottom row tables so the horizontal scroll actually functions */
+  /* Stop word wrap in the bottom tables so horizontal data stays on one line */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-row * {
     white-space: nowrap !important;
   }
 
-  /* 4. Ensure native touch actions and hide synthetic scrollbars */
-  .extension-editor > .body .monaco-split-view2.horizontal * { touch-action: auto !important; }
+  /* Hide synthetic scrollbars and sashes */
   .extension-editor > .body .monaco-split-view2.horizontal > .sash-container,
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view > .monaco-scrollable-element > .scrollbar {
     display: none !important;
@@ -44,18 +60,69 @@
 
 <script>
   window.addEventListener('load', () => {
-    // EVENT SHIELD: This intercepts your finger swipes before VS Code's engine can see them.
-    // By calling stopPropagation(), VS Code cannot block the scroll, forcing the browser to natively scroll the CSS auto areas.
-    const unlockNativeScroll = (e) => {
-      if (e.target.closest('.extension-editor > .body .monaco-split-view2')) {
-        e.stopPropagation();
-      }
-    };
     
-    // Attach to the capture phase of every touch vector
-    window.addEventListener('touchstart', unlockNativeScroll, { capture: true, passive: true });
-    window.addEventListener('touchmove', unlockNativeScroll, { capture: true, passive: true });
-    window.addEventListener('touchend', unlockNativeScroll, { capture: true, passive: true });
-    window.addEventListener('wheel', unlockNativeScroll, { capture: true, passive: true });
+    // =========================================
+    // VIRTUAL TOUCH-TO-WHEEL ENGINE
+    // Triggers VS Code's native virtualization
+    // =========================================
+    let lastY = 0;
+    let lastX = 0;
+    let isTouching = false;
+
+    // 1. Capture the exact start coordinates of the swipe
+    window.addEventListener('touchstart', (e) => {
+      // Only activate inside the Features tab split views
+      const target = e.target.closest('.split-view-container > .split-view-view');
+      if (target) {
+        isTouching = true;
+        lastY = e.touches[0].clientY;
+        lastX = e.touches[0].clientX;
+      }
+    }, { capture: true, passive: true });
+
+    // 2. Translate the finger movement into a synthetic mouse wheel event
+    window.addEventListener('touchmove', (e) => {
+      if (!isTouching) return;
+      
+      const target = e.target.closest('.split-view-container > .split-view-view');
+      if (target) {
+        const currentY = e.touches[0].clientY;
+        const currentX = e.touches[0].clientX;
+        
+        const deltaY = lastY - currentY;
+        const deltaX = lastX - currentX;
+        
+        lastY = currentY;
+        lastX = currentX;
+
+        // If the finger actually moved
+        if (Math.abs(deltaY) > 0 || Math.abs(deltaX) > 0) {
+          // Create a synthetic WheelEvent. 
+          // We multiply the delta by 2.5 to amplify the touch movement, making it feel snappier.
+          const wheelEvent = new WheelEvent('wheel', {
+            deltaY: deltaY * 2.5,
+            deltaX: deltaX * 2.5,
+            clientX: currentX, // Tells VS Code exactly where the "mouse" is hovering
+            clientY: currentY,
+            bubbles: true,
+            cancelable: true
+          });
+          
+          // Dispatch directly to the element the finger is touching
+          e.target.dispatchEvent(wheelEvent);
+          
+          // PREVENT default browser behavior (bounce/pull-to-refresh) so it doesn't fight VS Code
+          if (e.cancelable) {
+            e.preventDefault(); 
+          }
+        }
+      }
+    }, { capture: true, passive: false });
+
+    // 3. Clean up when finger lifts
+    window.addEventListener('touchend', () => {
+      isTouching = false;
+    }, { capture: true, passive: true });
+    
   });
 </script>

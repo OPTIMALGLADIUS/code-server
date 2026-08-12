@@ -1,35 +1,15 @@
-<!-- Mobile UX: Reverted Universal Layout, Optimized Features Tab & Inverted Virtual Scroll -->
+<!-- Mobile UX: Flawless Features Tab Layout, Dynamic Heights & Hybrid Scroll Engine -->
 <style>
   /* =========================================
-     1. BASE LAYOUT (Reverted to Flexbox)
+     1. BASE LAYOUT & HEADER (Intact)
      ========================================= */
-  /* This restores the flawless documentation rendering without needing to minimize the header */
-  .extension-editor {
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important; 
-    height: 100% !important;
-  }
-  .extension-editor > .body {
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-    position: relative !important;
-  }
-
-  /* =========================================
-     2. HEADER STYLES (Intact)
-     ========================================= */
+  .extension-editor { display: flex !important; flex-direction: column !important; overflow: hidden !important; height: 100% !important; }
+  .extension-editor > .body { flex: 1 1 auto !important; min-height: 0 !important; overflow: hidden !important; position: relative !important; }
   .extension-editor > .header {
-    display: flex !important; flex-direction: row !important; flex-shrink: 0 !important;
-    min-width: 0 !important; max-width: 100% !important; height: auto !important; 
-    min-height: min-content !important; padding: 12px 15px 25px 15px !important; 
-    box-sizing: border-box !important; position: relative !important;
+    display: flex !important; flex-direction: row !important; flex-shrink: 0 !important; min-width: 0 !important; max-width: 100% !important; 
+    height: auto !important; min-height: min-content !important; padding: 12px 15px 25px 15px !important; box-sizing: border-box !important; position: relative !important;
   }
-  .extension-editor > .header.header-collapsed {
-    padding: 0 0 20px 0 !important; background: var(--vscode-editor-background) !important;
-    border-bottom: 1px solid var(--vscode-panel-border) !important;
-  }
+  .extension-editor > .header.header-collapsed { padding: 0 0 20px 0 !important; background: var(--vscode-editor-background) !important; border-bottom: 1px solid var(--vscode-panel-border) !important; }
   .extension-editor > .header.header-collapsed > .icon-container,
   .extension-editor > .header.header-collapsed > .details { display: none !important; }
   .extension-editor > .header .icon-container { width: 50px !important; height: 50px !important; margin-right: 12px !important; flex-shrink: 0 !important; }
@@ -48,21 +28,27 @@
   .header-toggle-arrow:active { opacity: 1 !important; background: var(--vscode-list-hoverBackground) !important; }
 
   /* =========================================
-     3. FEATURES TAB 2-ROW SPLIT
+     2. FEATURES TAB: DYNAMIC FLEXBOX CONTAINER
      ========================================= */
+  /* Make the main container handle external horizontal scrolling natively */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container {
-    display: flex !important; flex-direction: column !important; width: 100% !important; height: 100% !important;
+    display: flex !important; flex-direction: column !important; width: 100vw !important; height: 100% !important;
+    overflow-x: auto !important; /* Enables universal horizontal swipe from ANY row */
+    overflow-y: hidden !important; 
+    -webkit-overflow-scrolling: touch !important;
   }
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view {
-    position: relative !important; top: auto !important; left: auto !important;
-    width: 100vw !important; max-width: 100vw !important; transform: none !important; 
+    position: relative !important; top: auto !important; left: auto !important; transform: none !important; 
   }
   
   /* --- TOP ROW (Navigation) --- */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child {
     flex: 0 0 auto !important; height: 180px !important; border-bottom: 1px solid var(--vscode-panel-border) !important;
-    overflow: hidden !important; 
+    width: 100vw !important; min-width: 100vw !important;
+    /* Keeps the upper row fixed visually while the parent container scrolls horizontally */
+    position: sticky !important; left: 0 !important; z-index: 5 !important; background: var(--vscode-editor-background) !important;
   }
+  /* Force wrap and bypass 150px limitations */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-list,
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-scrollable-element,
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-list-rows,
@@ -75,35 +61,30 @@
 
   /* --- BOTTOM ROW (Content Tables) --- */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child {
-    flex: 1 1 auto !important; height: 100% !important; overflow: hidden !important; 
+    /* Pure Flex calculation: Dynamically fills exact remaining screen space. Fixes vertical hidden items */
+    flex: 1 1 auto !important; height: auto !important; min-height: 0 !important; 
+    width: max-content !important; min-width: 100vw !important;
   }
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-scrollable-element {
-    overflow: hidden !important; width: 100vw !important; height: 100% !important;
+    overflow: hidden !important; width: 100% !important; height: 100% !important;
   }
   
-  /* OVERRIDE INLINE TABLE CLIPPING: Force max-content so rows stretch infinitely */
+  /* --- ULTIMATE HORIZONTAL TRIMMING FIX --- */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-table,
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-rows {
-    width: max-content !important; min-width: 100vw !important; 
+    width: max-content !important; min-width: 100vw !important; display: block !important;
   }
   
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-row {
     display: flex !important; width: max-content !important; min-width: 100vw !important;
   }
   
-  /* CRITICAL FIX: Shatter the fixed width on individual cells to stop string truncation */
+  /* Shatter the inline width calculations of individual cells to allow infinite stretching */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-row > div,
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-row .monaco-table-td {
-    width: max-content !important; 
-    min-width: max-content !important;
-    flex: 1 0 auto !important; 
-    padding-right: 25px !important;
-    overflow: visible !important;
-  }
-  
-  /* Stop word wrap in the bottom tables so horizontal swipe stays functional */
-  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-row * {
-    white-space: nowrap !important; text-overflow: clip !important;
+    width: max-content !important; min-width: max-content !important; flex: 0 0 auto !important; 
+    white-space: pre !important; /* Forces strict horizontal alignment */
+    padding-right: 40px !important; overflow: visible !important;
   }
 
   /* Hide synthetic scrollbars and sashes */
@@ -117,14 +98,14 @@
   window.addEventListener('load', () => {
     
     // =========================================
-    // INVERTED VIRTUAL TOUCH-TO-WHEEL ENGINE
+    // HYBRID SCROLL ENGINE (Native X + Virtual Y)
     // =========================================
     let lastY = 0;
     let lastX = 0;
     let isTouching = false;
 
     window.addEventListener('touchstart', (e) => {
-      const target = e.target.closest('.split-view-container > .split-view-view');
+      const target = e.target.closest('.split-view-container');
       if (target) {
         isTouching = true;
         lastY = e.touches[0].clientY;
@@ -140,28 +121,29 @@
         const currentY = e.touches[0].clientY;
         const currentX = e.touches[0].clientX;
         
-        // INVERTED DELTAS (Maintained as requested)
+        // Inverted deltas
         const deltaY = currentY - lastY;
         const deltaX = currentX - lastX;
         
         lastY = currentY;
         lastX = currentX;
 
-        if (Math.abs(deltaY) > 0 || Math.abs(deltaX) > 0) {
+        // Smart Detection: Is the user swiping Vertically or Horizontally?
+        if (Math.abs(deltaY) > Math.abs(deltaX)) {
+          // VERTICAL SWIPE: Dispatch the inverted Virtual Wheel Event to VS Code
           const wheelEvent = new WheelEvent('wheel', {
             deltaY: deltaY * 2.5, 
-            deltaX: deltaX * 2.5, 
+            deltaX: 0, 
             clientX: currentX, 
             clientY: currentY,
             bubbles: true,
             cancelable: true
           });
-          
           e.target.dispatchEvent(wheelEvent);
-          
-          if (e.cancelable) {
-            e.preventDefault(); 
-          }
+          if (e.cancelable) e.preventDefault(); 
+        } else {
+          // HORIZONTAL SWIPE: Do NOTHING! Let the native CSS overflow-x on the parent flawlessly scroll the view.
+          // By NOT calling e.preventDefault(), the browser effortlessly slides the lower row while the sticky upper row stays locked in place.
         }
       }
     }, { capture: true, passive: false });

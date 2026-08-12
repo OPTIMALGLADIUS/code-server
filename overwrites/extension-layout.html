@@ -118,21 +118,50 @@
     position: relative !important;
     top: auto !important;
     left: auto !important;
-    width: 100% !important;
+    width: 100% !important; /* Force to take the full width of the screen */
     height: auto !important;
     transform: none !important; 
   }
+  
   /* The Navigation List (Top Row) */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child {
     flex: 0 0 auto !important;
-    height: 180px !important; /* Fixed height for the upper scrollable list */
+    height: 180px !important; 
     border-bottom: 1px solid var(--vscode-panel-border) !important;
+    overflow-y: auto !important;
   }
+  /* Force Top Row contents to take 100% width to prevent artificial clipping */
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-list,
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-scrollable-element,
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-list-rows,
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-list-row {
+    width: 100% !important;
+  }
+  /* Gracefully wrap text only if it strictly bypasses screen width */
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-list-row {
+    white-space: normal !important;
+    word-break: break-word !important;
+    line-height: 1.4 !important;
+  }
+
   /* The Content Area (Bottom Row) */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child {
     flex: 1 1 auto !important;
-    height: calc(100dvh - 250px) !important; /* Ensure ample room to scroll documentation */
+    height: calc(100dvh - 250px) !important; 
+    overflow: auto !important; /* Enable native browser scrolling */
+    touch-action: pan-x pan-y !important; /* Bypass VS Code scroll blocks */
   }
+  /* Allow internal tables/commands to stretch past screen width for horizontal swiping */
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-table,
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-rows {
+    width: max-content !important;
+    min-width: 100% !important;
+  }
+  /* Force all child elements in bottom row to respect native touch scrolling */
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child * {
+    touch-action: pan-x pan-y !important; 
+  }
+
   /* Disable the draggable vertical sash */
   .extension-editor > .body .monaco-split-view2.horizontal > .sash-container {
     display: none !important;

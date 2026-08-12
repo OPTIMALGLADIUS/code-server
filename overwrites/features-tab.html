@@ -1,52 +1,67 @@
-<!-- Mobile UX: Features Tab 2-Row Layout & Virtual Touch-to-Wheel Engine -->
+<!-- Mobile UX: Features Tab Layout, Universal Scroll & Inverted Virtual Engine -->
 <style>
-  /* 1. Force the SplitView to become a CSS Flex Column */
+  /* =========================================
+     1. UNIVERSAL VERTICAL SCROLL
+     ========================================= */
+  /* Allow the entire extension tab to scroll vertically (Header + Body) */
+  .extension-editor {
+    display: block !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: 100% !important;
+  }
+  /* Give the body a fixed tall height so it pushes down and creates universal scroll space for the header */
+  .extension-editor > .body {
+    display: block !important;
+    height: calc(100dvh - 45px) !important; /* 45px = Approx minimized header height */
+    position: relative !important;
+    overflow: hidden !important;
+  }
+
+  /* =========================================
+     2. FEATURES TAB FLEX LAYOUT
+     ========================================= */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container {
-    display: flex !important; flex-direction: column !important; width: 100vw !important;
+    display: flex !important; flex-direction: column !important; width: 100vw !important; height: 100% !important;
   }
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view {
     position: relative !important; top: auto !important; left: auto !important;
     width: 100vw !important; max-width: 100vw !important; height: auto !important; transform: none !important; 
   }
   
-  /* =========================================
-     TOP ROW (Navigation): The Sledgehammer Fix 
-     ========================================= */
+  /* --- TOP ROW (Navigation) --- */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child {
     flex: 0 0 auto !important; height: 180px !important; border-bottom: 1px solid var(--vscode-panel-border) !important;
-    overflow: hidden !important; /* JS will handle the scrolling now */
+    overflow: hidden !important; /* Managed by JS wheel engine */
   }
-  
   /* Force EVERY nested list element to bypass the 150px dummy column limit */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-list,
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-scrollable-element,
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-list-rows,
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-list-row {
-    width: 100vw !important; 
-    min-width: 100vw !important; /* Crucial: Overrides VS Code's inline styling */
-    max-width: 100vw !important;
+    width: 100vw !important; min-width: 100vw !important; max-width: 100vw !important;
   }
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-list-row {
-    white-space: normal !important; word-break: break-word !important; 
-    padding-right: 20px !important; /* Ensure text doesn't touch the very edge */
+    white-space: normal !important; word-break: break-word !important; padding-right: 20px !important; 
   }
 
-  /* =========================================
-     BOTTOM ROW (Content): Virtualized Tables
-     ========================================= */
+  /* --- BOTTOM ROW (Content Tables) --- */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child {
-    flex: 1 1 auto !important; height: calc(100dvh - 250px) !important; overflow: hidden !important; 
+    flex: 1 1 auto !important; height: calc(100% - 180px) !important; overflow: hidden !important; 
   }
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-scrollable-element {
     overflow: hidden !important; width: 100vw !important; height: 100% !important;
   }
   
-  /* Allow internal tables/commands to stretch infinitely to the right for horizontal scrolling */
+  /* Horizontal Sledgehammer: Force min-width to 200vw to ensure massive horizontal swipe space */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-table,
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-rows {
-    width: max-content !important; min-width: 100vw !important; 
+    width: max-content !important; min-width: 200vw !important; padding-right: 50px !important;
   }
-  /* Stop word wrap in the bottom tables so horizontal data stays on one line */
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-row {
+    width: max-content !important; min-width: 200vw !important;
+  }
+  /* Stop word wrap in the bottom tables so horizontal data strictly stays on one line */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-row * {
     white-space: nowrap !important;
   }
@@ -62,16 +77,14 @@
   window.addEventListener('load', () => {
     
     // =========================================
-    // VIRTUAL TOUCH-TO-WHEEL ENGINE
-    // Triggers VS Code's native virtualization
+    // INVERTED VIRTUAL TOUCH-TO-WHEEL ENGINE
     // =========================================
     let lastY = 0;
     let lastX = 0;
     let isTouching = false;
 
-    // 1. Capture the exact start coordinates of the swipe
     window.addEventListener('touchstart', (e) => {
-      // Only activate inside the Features tab split views
+      // Only capture swipes inside the actual lists. Swiping the header or margins will natively scroll the universal tab.
       const target = e.target.closest('.split-view-container > .split-view-view');
       if (target) {
         isTouching = true;
@@ -80,7 +93,6 @@
       }
     }, { capture: true, passive: true });
 
-    // 2. Translate the finger movement into a synthetic mouse wheel event
     window.addEventListener('touchmove', (e) => {
       if (!isTouching) return;
       
@@ -89,29 +101,27 @@
         const currentY = e.touches[0].clientY;
         const currentX = e.touches[0].clientX;
         
-        const deltaY = lastY - currentY;
-        const deltaX = lastX - currentX;
+        // --- INVERSION APPLIED HERE ---
+        // By subtracting last from current (instead of current from last), the scroll direction is completely flipped.
+        const deltaY = currentY - lastY;
+        const deltaX = currentX - lastX;
         
         lastY = currentY;
         lastX = currentX;
 
-        // If the finger actually moved
         if (Math.abs(deltaY) > 0 || Math.abs(deltaX) > 0) {
-          // Create a synthetic WheelEvent. 
-          // We multiply the delta by 2.5 to amplify the touch movement, making it feel snappier.
           const wheelEvent = new WheelEvent('wheel', {
-            deltaY: deltaY * 2.5,
-            deltaX: deltaX * 2.5,
-            clientX: currentX, // Tells VS Code exactly where the "mouse" is hovering
+            deltaY: deltaY * 2.5, // Amplified for snappiness
+            deltaX: deltaX * 2.5, 
+            clientX: currentX, 
             clientY: currentY,
             bubbles: true,
             cancelable: true
           });
           
-          // Dispatch directly to the element the finger is touching
           e.target.dispatchEvent(wheelEvent);
           
-          // PREVENT default browser behavior (bounce/pull-to-refresh) so it doesn't fight VS Code
+          // Prevents the browser from pulling the whole screen while swiping in the tables
           if (e.cancelable) {
             e.preventDefault(); 
           }
@@ -119,7 +129,6 @@
       }
     }, { capture: true, passive: false });
 
-    // 3. Clean up when finger lifts
     window.addEventListener('touchend', () => {
       isTouching = false;
     }, { capture: true, passive: true });

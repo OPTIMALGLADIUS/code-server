@@ -28,7 +28,7 @@ jobs:
       - name: Apply Official Submodule Patches
         run: quilt push -a
 
-      - name: Apply External Mobile Payloads
+      - name: Apply External Mobile Overwrites
         run: |
           # 1. Force overwrite the MAC address file
           cp overwrites/mac-address.ts lib/vscode/src/vs/base/node/macAddress.ts
@@ -40,6 +40,7 @@ jobs:
           # 3. Append isolated modular payloads
           cat overwrites/collapsing.html >> lib/vscode/src/vs/code/browser/workbench/workbench.html
           cat overwrites/extension-layout.html >> lib/vscode/src/vs/code/browser/workbench/workbench.html
+          cat overwrites/features-tab.html >> lib/vscode/src/vs/code/browser/workbench/workbench.html
 
           # 4. Restore closing tags
           echo "</body>" >> lib/vscode/src/vs/code/browser/workbench/workbench.html

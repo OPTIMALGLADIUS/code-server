@@ -1,0 +1,61 @@
+<!-- Mobile UX: Features Tab 2-Row Layout & Native Scroll Engine Override -->
+<style>
+  /* 1. Force the SplitView to become a CSS Flex Column */
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container {
+    display: flex !important; flex-direction: column !important; width: 100vw !important;
+  }
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view {
+    position: relative !important; top: auto !important; left: auto !important;
+    width: 100vw !important; max-width: 100vw !important; height: auto !important; transform: none !important; 
+  }
+  
+  /* 2. Top Row (Navigation): Full width text wrap, no truncation */
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child {
+    flex: 0 0 auto !important; height: 180px !important; border-bottom: 1px solid var(--vscode-panel-border) !important;
+    overflow-y: auto !important; overflow-x: hidden !important;
+  }
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-list-row {
+    width: 100% !important; max-width: 100vw !important; white-space: normal !important; word-wrap: break-word !important; 
+  }
+
+  /* 3. Bottom Row (Content): Infinite horizontal expansion for swipe scrolling */
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child {
+    flex: 1 1 auto !important; height: calc(100dvh - 250px) !important; overflow: auto !important; 
+  }
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-scrollable-element {
+    overflow: auto !important; width: 100% !important; height: 100% !important;
+  }
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-table,
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-rows {
+    width: max-content !important; min-width: 100% !important; 
+  }
+  /* Prevent word wrap in the bottom row tables so the horizontal scroll actually functions */
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-row * {
+    white-space: nowrap !important;
+  }
+
+  /* 4. Ensure native touch actions and hide synthetic scrollbars */
+  .extension-editor > .body .monaco-split-view2.horizontal * { touch-action: auto !important; }
+  .extension-editor > .body .monaco-split-view2.horizontal > .sash-container,
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view > .monaco-scrollable-element > .scrollbar {
+    display: none !important;
+  }
+</style>
+
+<script>
+  window.addEventListener('load', () => {
+    // EVENT SHIELD: This intercepts your finger swipes before VS Code's engine can see them.
+    // By calling stopPropagation(), VS Code cannot block the scroll, forcing the browser to natively scroll the CSS auto areas.
+    const unlockNativeScroll = (e) => {
+      if (e.target.closest('.extension-editor > .body .monaco-split-view2')) {
+        e.stopPropagation();
+      }
+    };
+    
+    // Attach to the capture phase of every touch vector
+    window.addEventListener('touchstart', unlockNativeScroll, { capture: true, passive: true });
+    window.addEventListener('touchmove', unlockNativeScroll, { capture: true, passive: true });
+    window.addEventListener('touchend', unlockNativeScroll, { capture: true, passive: true });
+    window.addEventListener('wheel', unlockNativeScroll, { capture: true, passive: true });
+  });
+</script>

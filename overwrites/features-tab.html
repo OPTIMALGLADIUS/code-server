@@ -1,40 +1,68 @@
-<!-- Mobile UX: Features Tab Layout, Universal Scroll & Inverted Virtual Engine -->
+<!-- Mobile UX: Reverted Universal Layout, Optimized Features Tab & Inverted Virtual Scroll -->
 <style>
   /* =========================================
-     1. UNIVERSAL VERTICAL SCROLL
+     1. BASE LAYOUT (Reverted to Flexbox)
      ========================================= */
-  /* Allow the entire extension tab to scroll vertically (Header + Body) */
+  /* This restores the flawless documentation rendering without needing to minimize the header */
   .extension-editor {
-    display: block !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important; 
     height: 100% !important;
   }
-  /* Give the body a fixed tall height so it pushes down and creates universal scroll space for the header */
   .extension-editor > .body {
-    display: block !important;
-    height: calc(100dvh - 45px) !important; /* 45px = Approx minimized header height */
-    position: relative !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
     overflow: hidden !important;
+    position: relative !important;
   }
 
   /* =========================================
-     2. FEATURES TAB FLEX LAYOUT
+     2. HEADER STYLES (Intact)
+     ========================================= */
+  .extension-editor > .header {
+    display: flex !important; flex-direction: row !important; flex-shrink: 0 !important;
+    min-width: 0 !important; max-width: 100% !important; height: auto !important; 
+    min-height: min-content !important; padding: 12px 15px 25px 15px !important; 
+    box-sizing: border-box !important; position: relative !important;
+  }
+  .extension-editor > .header.header-collapsed {
+    padding: 0 0 20px 0 !important; background: var(--vscode-editor-background) !important;
+    border-bottom: 1px solid var(--vscode-panel-border) !important;
+  }
+  .extension-editor > .header.header-collapsed > .icon-container,
+  .extension-editor > .header.header-collapsed > .details { display: none !important; }
+  .extension-editor > .header .icon-container { width: 50px !important; height: 50px !important; margin-right: 12px !important; flex-shrink: 0 !important; }
+  .extension-editor > .header .icon-container .icon { width: 50px !important; height: 50px !important; border-radius: 6px !important; }
+  .extension-editor > .header .details { display: flex !important; flex-direction: column !important; min-width: 0 !important; width: 100% !important; flex: 1 !important; }
+  .extension-editor > .header .details > * { order: 5 !important; }
+  .extension-editor > .header .details .title { order: 1 !important; display: block !important; width: 100% !important; margin-bottom: 4px !important; }
+  .extension-editor > .header .details .title .name { display: inline !important; white-space: normal !important; overflow-wrap: break-word !important; word-break: break-word !important; font-size: 16px !important; line-height: 1.2 !important; }
+  .extension-editor > .header .details .description { order: 2 !important; font-size: 12px !important; line-height: 1.4 !important; margin: 0 0 4px 0 !important; opacity: 0.85 !important; }
+  .desc-clamped { display: -webkit-box !important; -webkit-box-orient: vertical !important; -webkit-line-clamp: 1 !important; overflow: hidden !important; }
+  .desc-expanded { display: block !important; overflow: visible !important; }
+  .rm-toggle-btn { order: 3 !important; color: var(--vscode-textLink-foreground) !important; font-size: 11px !important; font-weight: 600 !important; cursor: pointer !important; margin-bottom: 8px !important; display: inline-block !important; align-self: flex-start !important; }
+  .extension-editor > .header .details .subtitle { order: 4 !important; flex-wrap: wrap !important; margin-bottom: 8px !important; }
+  .meta-hidden { display: none !important; }
+  .header-toggle-arrow { position: absolute !important; bottom: 0 !important; left: 0 !important; width: 100% !important; height: 20px !important; background: var(--vscode-editor-background) !important; border-top: 1px solid var(--vscode-panel-border) !important; display: flex !important; align-items: center !important; justify-content: center !important; cursor: pointer !important; font-size: 10px !important; opacity: 0.7 !important; z-index: 10 !important; }
+  .header-toggle-arrow:active { opacity: 1 !important; background: var(--vscode-list-hoverBackground) !important; }
+
+  /* =========================================
+     3. FEATURES TAB 2-ROW SPLIT
      ========================================= */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container {
-    display: flex !important; flex-direction: column !important; width: 100vw !important; height: 100% !important;
+    display: flex !important; flex-direction: column !important; width: 100% !important; height: 100% !important;
   }
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view {
     position: relative !important; top: auto !important; left: auto !important;
-    width: 100vw !important; max-width: 100vw !important; height: auto !important; transform: none !important; 
+    width: 100vw !important; max-width: 100vw !important; transform: none !important; 
   }
   
   /* --- TOP ROW (Navigation) --- */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child {
     flex: 0 0 auto !important; height: 180px !important; border-bottom: 1px solid var(--vscode-panel-border) !important;
-    overflow: hidden !important; /* Managed by JS wheel engine */
+    overflow: hidden !important; 
   }
-  /* Force EVERY nested list element to bypass the 150px dummy column limit */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-list,
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-scrollable-element,
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:first-child .monaco-list-rows,
@@ -47,23 +75,35 @@
 
   /* --- BOTTOM ROW (Content Tables) --- */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child {
-    flex: 1 1 auto !important; height: calc(100% - 180px) !important; overflow: hidden !important; 
+    flex: 1 1 auto !important; height: 100% !important; overflow: hidden !important; 
   }
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-scrollable-element {
     overflow: hidden !important; width: 100vw !important; height: 100% !important;
   }
   
-  /* Horizontal Sledgehammer: Force min-width to 200vw to ensure massive horizontal swipe space */
+  /* OVERRIDE INLINE TABLE CLIPPING: Force max-content so rows stretch infinitely */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-table,
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-rows {
-    width: max-content !important; min-width: 200vw !important; padding-right: 50px !important;
+    width: max-content !important; min-width: 100vw !important; 
   }
+  
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-row {
-    width: max-content !important; min-width: 200vw !important;
+    display: flex !important; width: max-content !important; min-width: 100vw !important;
   }
-  /* Stop word wrap in the bottom tables so horizontal data strictly stays on one line */
+  
+  /* CRITICAL FIX: Shatter the fixed width on individual cells to stop string truncation */
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-row > div,
+  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-row .monaco-table-td {
+    width: max-content !important; 
+    min-width: max-content !important;
+    flex: 1 0 auto !important; 
+    padding-right: 25px !important;
+    overflow: visible !important;
+  }
+  
+  /* Stop word wrap in the bottom tables so horizontal swipe stays functional */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-row * {
-    white-space: nowrap !important;
+    white-space: nowrap !important; text-overflow: clip !important;
   }
 
   /* Hide synthetic scrollbars and sashes */
@@ -84,7 +124,6 @@
     let isTouching = false;
 
     window.addEventListener('touchstart', (e) => {
-      // Only capture swipes inside the actual lists. Swiping the header or margins will natively scroll the universal tab.
       const target = e.target.closest('.split-view-container > .split-view-view');
       if (target) {
         isTouching = true;
@@ -101,8 +140,7 @@
         const currentY = e.touches[0].clientY;
         const currentX = e.touches[0].clientX;
         
-        // --- INVERSION APPLIED HERE ---
-        // By subtracting last from current (instead of current from last), the scroll direction is completely flipped.
+        // INVERTED DELTAS (Maintained as requested)
         const deltaY = currentY - lastY;
         const deltaX = currentX - lastX;
         
@@ -111,7 +149,7 @@
 
         if (Math.abs(deltaY) > 0 || Math.abs(deltaX) > 0) {
           const wheelEvent = new WheelEvent('wheel', {
-            deltaY: deltaY * 2.5, // Amplified for snappiness
+            deltaY: deltaY * 2.5, 
             deltaX: deltaX * 2.5, 
             clientX: currentX, 
             clientY: currentY,
@@ -121,7 +159,6 @@
           
           e.target.dispatchEvent(wheelEvent);
           
-          // Prevents the browser from pulling the whole screen while swiping in the tables
           if (e.cancelable) {
             e.preventDefault(); 
           }
@@ -133,5 +170,63 @@
       isTouching = false;
     }, { capture: true, passive: true });
     
+    // =========================================
+    // DYNAMIC UI OVERRIDES (Header & Read More)
+    // =========================================
+    const observer = new MutationObserver(() => {
+      const headers = document.querySelectorAll('.extension-editor > .header:not(.ui-processed)');
+      
+      headers.forEach(header => {
+        header.classList.add('ui-processed');
+        
+        const arrowBtn = document.createElement('div');
+        arrowBtn.className = 'header-toggle-arrow';
+        arrowBtn.innerText = '▲ Minimize Header';
+        header.appendChild(arrowBtn);
+
+        arrowBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          header.classList.toggle('header-collapsed');
+          if (header.classList.contains('header-collapsed')) {
+            arrowBtn.innerText = '▼ Show Header';
+          } else {
+            arrowBtn.innerText = '▲ Minimize Header';
+          }
+        });
+
+        const details = header.querySelector('.details');
+        if (!details) return;
+
+        const desc = details.querySelector('.description');
+        const subtitle = details.querySelector('.subtitle');
+
+        if (desc && subtitle) {
+          subtitle.classList.add('meta-hidden');
+          desc.classList.add('desc-clamped');
+
+          const toggleBtn = document.createElement('div');
+          toggleBtn.className = 'rm-toggle-btn';
+          toggleBtn.innerText = 'Read more ▼';
+          details.appendChild(toggleBtn);
+
+          toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (desc.classList.contains('desc-clamped')) {
+              desc.classList.remove('desc-clamped');
+              desc.classList.add('desc-expanded');
+              subtitle.classList.remove('meta-hidden');
+              toggleBtn.innerText = 'Read less ▲';
+            } else {
+              desc.classList.remove('desc-expanded');
+              desc.classList.add('desc-clamped');
+              subtitle.classList.add('meta-hidden');
+              toggleBtn.innerText = 'Read more ▼';
+            }
+          });
+        }
+      });
+    });
+    
+    observer.observe(document.body, { childList: true, subtree: true });
   });
 </script>

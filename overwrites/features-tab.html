@@ -1,4 +1,4 @@
-<!-- Mobile UX: Infinite Horizontal Pan & Targeted Virtual Vertical Scroll -->
+<!-- Mobile UX: Extreme Horizontal Panning & Omni-Directional Virtual Scroll -->
 <style>
   /* =========================================
      1. BASE LAYOUT & HEADER
@@ -29,7 +29,7 @@
   .header-toggle-arrow:active { opacity: 1 !important; background: var(--vscode-list-hoverBackground) !important; }
 
   /* =========================================
-     2. FEATURES TAB: INFINITE X-AXIS PANNING
+     2. FEATURES TAB: EXTREME X-AXIS PANNING
      ========================================= */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element {
     overflow-x: auto !important; 
@@ -42,6 +42,7 @@
     display: flex !important; flex-direction: column !important; 
     width: max-content !important; 
     min-width: 100vw !important; height: 100% !important;
+    padding-right: 300vw !important; /* EXTREME EXTERNAL RUNWAY: Ensures external scroll never hits a wall */
   }
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view {
     position: relative !important; top: auto !important; left: auto !important; transform: none !important; 
@@ -74,32 +75,32 @@
   
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-table,
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-rows {
-    width: max-content !important; min-width: 200vw !important; display: block !important;
+    width: max-content !important; min-width: 100vw !important; display: block !important;
   }
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-row {
-    display: flex !important; width: max-content !important; min-width: 200vw !important;
-    padding-right: 80vw !important; /* MASSIVE BUFFER: Overrides JS bounding box limitations */
+    display: flex !important; width: max-content !important; min-width: 100vw !important;
   }
   
-  /* Prevent shrinking and force absolute visibility on table cells */
+  /* EXTREME INTERNAL RUNWAY: Obliterates cell trimming limitations */
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-row > div,
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-table-td {
     width: max-content !important; min-width: max-content !important; max-width: none !important;
-    flex: 0 0 auto !important; padding-right: 40px !important; overflow: visible !important;
+    flex: 0 0 auto !important; padding-right: 150vw !important; overflow: visible !important;
   }
   .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view:last-child .monaco-list-row * {
     white-space: nowrap !important; text-overflow: clip !important; overflow: visible !important;
   }
 
-  .extension-editor > .body .monaco-split-view2.horizontal > .sash-container,
-  .extension-editor > .body .monaco-split-view2.horizontal > .monaco-scrollable-element > .split-view-container > .split-view-view > .monaco-scrollable-element > .scrollbar { display: none !important; }
+  /* Note: Internal synthetic scrollbars are allowed to display again so you can track swipe progress! */
+  .extension-editor > .body .monaco-split-view2.horizontal > .sash-container { display: none !important; }
 </style>
 
 <script>
   window.addEventListener('load', () => {
     
     // =========================================
-    // TARGETED SMART AXIS SCROLL ENGINE
+    // OMNI-DIRECTIONAL VIRTUAL SCROLL ENGINE
+    // Triggers BOTH internal Native and External scrolling
     // =========================================
     let lastY = 0;
     let lastX = 0;
@@ -128,26 +129,27 @@
         lastY = currentY;
         lastX = currentX;
 
-        // Axis Detection: Vertical or Horizontal?
+        // Find the exact element VS Code's internal virtualization engine is monitoring
+        const scrollTarget = e.target.closest('.monaco-scrollable-element') || e.target;
+        
+        // Inject BOTH deltaY and deltaX. This forces VS Code's native internal horizontal scrollbar to move!
+        const wheelEvent = new WheelEvent('wheel', {
+          deltaY: deltaY * 3.0, 
+          deltaX: deltaX * 3.0, 
+          clientX: currentX, 
+          clientY: currentY,
+          deltaMode: 0, 
+          bubbles: true,
+          cancelable: true
+        });
+        
+        scrollTarget.dispatchEvent(wheelEvent);
+
+        // Smart axis locking to prevent screen bouncing:
+        // Only prevent browser default if you are scrolling strictly vertically.
+        // If scrolling horizontally, we let the external CSS pan work concurrently with the internal scroll!
         if (Math.abs(deltaY) > Math.abs(deltaX)) {
-          // VERTICAL SWIPE: Find the exact element VS Code's engine is listening to
-          const scrollTarget = e.target.closest('.monaco-scrollable-element') || e.target;
-          
-          const wheelEvent = new WheelEvent('wheel', {
-            deltaY: deltaY * 3.0, // Multiplier for smooth response
-            deltaX: 0, 
-            clientX: currentX, 
-            clientY: currentY,
-            deltaMode: 0, // CRITICAL: Tells VS Code these are literal Pixel movements, not lines/pages
-            bubbles: true,
-            cancelable: true
-          });
-          
-          scrollTarget.dispatchEvent(wheelEvent);
           if (e.cancelable) e.preventDefault(); 
-        } else {
-          // HORIZONTAL SWIPE: Let native CSS pan horizontally
-          e.stopPropagation(); 
         }
       }
     }, { capture: true, passive: false });
